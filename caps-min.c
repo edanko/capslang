@@ -1,6 +1,9 @@
 /*
 	CapsLang by Ryurik 2003-11-12, updated 2006-10-24
-         
+        
+	Updated by LWJGL2 for correct work at startup from the administrator.
+	Updated by LWJGL2 для корректной работы при запуске от администратора.
+	
 	This small windowless program allow you swich keyboard layout with CapsLock key.
 	While non-standard keyboard layout will bright Scroll Lock indicator
 
