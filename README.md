@@ -8,10 +8,12 @@ Fixed switching layouts in programs running on behalf of the administrator,
 Исправлено переключение раскладок в программах, запущенных от имени администратора,
 **для этого запустите программу от имени администратора.**
 
-_Binaries compiled using mingw g++compiler_\
+_Binaries compiled using mingw g++compiler_
 
-*Toggles the standard layout ALT+SHIFT*
-*Переключает стандартную раскладку ALT+SHIFT*\
+
+## Download
+#### Toggles the standard layout ALT+SHIFT
+#### Переключает стандартную раскладку ALT+SHIFT
 
 Download [mingw-caps-min.exe](https://github.com/steelswing/capslang/releases/download/2.0/mingw-caps-min.exe)\
 Download [mingw-capslang.exe](https://github.com/steelswing/capslang/releases/download/2.0/mingw-capslang.exe)
