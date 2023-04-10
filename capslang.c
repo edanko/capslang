@@ -1,5 +1,9 @@
 /*
 	CapsLang by Ryurik 2003-11-12, updated 2006-10-24
+	
+	11-04-2023
+	Updated by LWJGL2 for correct work at startup from the administrator.
+	Updated by LWJGL2 для корректной работы при запуске от администратора.
 
 	This small windowless program allow you swich keyboard layout with CapsLock key.
 	While non-standard keyboard layout will bright Scroll Lock indicator
@@ -21,6 +25,7 @@
 
 #include <windows.h>
 #include <tchar.h>
+#include <winuser.h>
 
 #define WH_KEYBOARD_LL     13
 typedef struct tagKBDLLHOOKSTRUCT {
@@ -56,7 +61,11 @@ LRESULT CALLBACK KbdHook(int nCode,WPARAM wParam,LPARAM lParam) {
 			if (wParam==WM_KEYDOWN) {
 				HWND hWnd=GetFocusWindow();
 				if (hWnd) {
-					PostMessage(hWnd,WM_INPUTLANGCHANGEREQUEST,0,(LPARAM)HKL_NEXT);
+				    // ALT + SHIFT для переключения
+				    keybd_event(VK_MENU, 0, 0, 0);
+				    keybd_event(VK_SHIFT, 0, 0, 0);
+				    keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
+				    keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
 					ToggleLight();
 					return TRUE;
 				}
