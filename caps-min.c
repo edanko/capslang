@@ -1,6 +1,7 @@
 /*
 	CapsLang by Ryurik 2003-11-12, updated 2006-10-24
         
+	11-04-2023
 	Updated by LWJGL2 for correct work at startup from the administrator.
 	Updated by LWJGL2 для корректной работы при запуске от администратора.
 	
