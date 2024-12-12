@@ -1,3 +1,2 @@
-*.err
-*.exe
-*.obj
+.zig-cache
+zig-out
