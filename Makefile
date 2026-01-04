@@ -24,7 +24,7 @@ build-release:
 
 # Clean build artifacts
 clean:
-	rm -rf zig-cache zig-out
+	rm -rf .zig-cache zig-out
 
 # Create and push a new release tag
 release:
