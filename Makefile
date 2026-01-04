@@ -1,4 +1,14 @@
-.PHONY: build build-release clean release
+.PHONY: help build build-release clean release
+
+help:
+	@awk '/^[a-zA-Z_-]+:/ { \
+		msg = match(lastLine, /^# (.*)/); \
+		if (msg) { \
+			cmd = substr($$1, 1, index($$1, ":") - 1); \
+			printf "\033[36m%-15s\033[0m %s\n", cmd, substr(lastLine, 3); \
+		} \
+	} \
+	{ lastLine = $$0 }' $(MAKEFILE_LIST)
 
 GIT := git
 LATEST_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "v2.0.0")
