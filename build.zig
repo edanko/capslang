@@ -21,7 +21,7 @@ pub fn build(b: *std.Build) void {
     });
 
     exe.subsystem = .Windows;
-    exe.want_lto = false;
+    exe.lto = .none;
 
     b.installArtifact(exe);
 }
