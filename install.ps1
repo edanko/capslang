@@ -36,6 +36,12 @@ function Write-Banner {
     Write-Host "==================" -ForegroundColor Cyan
 }
 
+function Test-IsAdmin {
+    $windowsIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $windowsPrincipal = New-Object System.Security.Principal.WindowsPrincipal($windowsIdentity)
+    return $windowsPrincipal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
 function Get-LatestVersion {
     Write-Host "`nFetching latest release..." -ForegroundColor Yellow
     try {
@@ -101,24 +107,24 @@ function Install-ScheduledTask {
 
     Write-Host "Creating scheduled task..." -ForegroundColor Yellow
 
-    schtasks /delete /tn $taskName /f 2>$null | Out-Null
-
-    $result = schtasks /create `
-        /tn $taskName `
-        /sc ONLOGON `
-        /tr "`"$absPath`"" `
-        /rl HIGHEST `
-        /delay 0000:30 `
-        /f
+    $result = schtasks /create /tn $taskName /sc ONLOGON /tr "`"$absPath`"" /rl HIGHEST /delay 0000:30 /f 2>&1
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to create scheduled task (exit code: $LASTEXITCODE)"
+        Write-Error "Failed to create scheduled task: $result"
         exit 1
     }
 
     Write-Host "  Created task: $taskName" -ForegroundColor Green
     Write-Host "  Runs with: Highest privileges" -ForegroundColor Green
     Write-Host "  Trigger: On user logon (30s delay)" -ForegroundColor Green
+
+    Write-Host "Starting task..." -ForegroundColor Yellow
+    $runResult = schtasks /run /tn $taskName 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Warning: Failed to start task" -ForegroundColor Yellow
+    } else {
+        Write-Host "  Started" -ForegroundColor Green
+    }
 }
 
 function Install-CapsLang {
@@ -151,10 +157,33 @@ function Install-CapsLang {
     Write-Host "Extracting..." -ForegroundColor Yellow
     try {
         if (Test-Path $installDir) {
-            Remove-Item -Recurse -Force $installDir
+            Write-Host "  Stopping existing task..." -ForegroundColor Yellow
+            $si = New-Object System.Diagnostics.ProcessStartInfo
+            $si.FileName = "schtasks.exe"
+            $si.Arguments = "/end /tn `"CapsLang`""
+            $si.UseShellExecute = $false
+            $si.CreateNoWindow = $true
+            $p = [System.Diagnostics.Process]::Start($si)
+            $p.WaitForExit()
+
+            Write-Host "  Killing capslang process..." -ForegroundColor Yellow
+            Get-Process -Name "capslang" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+            Write-Host "  Removing old installation..." -ForegroundColor Yellow
+            Start-Sleep -Milliseconds 1000
+            for ($i = 0; $i -lt 5; $i++) {
+                try {
+                    Remove-Item -Recurse -Force $installDir -ErrorAction Stop
+                    break
+                } catch {
+                    if ($i -eq 4) { throw }
+                    Start-Sleep -Milliseconds 500
+                }
+            }
         }
         New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 
+        Write-Host "  Extracting..." -ForegroundColor Yellow
         Expand-Archive -Path $tempZip -DestinationPath $installDir -Force
         Write-Host "  Extracted to: $installDir" -ForegroundColor Green
     } catch {
@@ -168,10 +197,26 @@ function Install-CapsLang {
         exit 1
     }
 
+    Write-Host "Unblocking executable..." -ForegroundColor Yellow
+    try {
+        Unblock-File -Path $exePath -ErrorAction SilentlyContinue
+        Write-Host "  Unblocked" -ForegroundColor Green
+    } catch {
+        Write-Host "  Warning: Could not unblock (may already be unblocked)" -ForegroundColor Gray
+    }
+
     Write-Host "`nInstalling..." -ForegroundColor Yellow
     switch ($Method) {
         1 { Install-StartupFolder -ExePath $exePath }
-        2 { Install-ScheduledTask -ExePath $exePath }
+        2 {
+            if (-not (Test-IsAdmin)) {
+                Write-Host "  WARNING: Scheduled task requires admin privileges" -ForegroundColor Yellow
+                Write-Host "  Please run PowerShell as Administrator and try again" -ForegroundColor Yellow
+                Write-Host "  Or use Method 1 (Startup folder) instead" -ForegroundColor Yellow
+                exit 1
+            }
+            Install-ScheduledTask -ExePath $exePath
+        }
     }
 
     Remove-Item $tempZip -Force 2>$null | Out-Null
@@ -179,8 +224,6 @@ function Install-CapsLang {
     Write-Host "`n========================================" -ForegroundColor Green
     Write-Host "  Installation complete!" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "  Exit CapsLang: Ctrl + Alt + L" -ForegroundColor White
     Write-Host ""
 
     if (-not $Quiet) {

@@ -54,11 +54,29 @@ function Remove-StartupFolder {
 }
 
 function Remove-ScheduledTask {
+    Write-Host "Stopping scheduled task..." -ForegroundColor Yellow
+
+    $si = New-Object System.Diagnostics.ProcessStartInfo
+    $si.FileName = "schtasks.exe"
+    $si.Arguments = "/end /tn `"$TASK_NAME`""
+    $si.UseShellExecute = $false
+    $si.CreateNoWindow = $true
+
+    $p = [System.Diagnostics.Process]::Start($si)
+    $p.WaitForExit()
+
     Write-Host "Removing scheduled task..." -ForegroundColor Yellow
 
-    schtasks /Delete /TN $TASK_NAME /F 2>$null | Out-Null
+    $si2 = New-Object System.Diagnostics.ProcessStartInfo
+    $si2.FileName = "schtasks.exe"
+    $si2.Arguments = "/Delete /TN `"$TASK_NAME`" /F"
+    $si2.UseShellExecute = $false
+    $si2.CreateNoWindow = $true
 
-    if ($LASTEXITCODE -eq 0) {
+    $p2 = [System.Diagnostics.Process]::Start($si2)
+    $p2.WaitForExit()
+
+    if ($p2.ExitCode -eq 0) {
         Write-Host "  Removed task: $TASK_NAME" -ForegroundColor Green
         return $true
     }
@@ -75,18 +93,24 @@ function Remove-InstallDir {
         return $false
     }
 
-    try {
-        Remove-Item $INSTALL_DIR -Recurse -Force
-        if (-not (Test-Path $INSTALL_DIR)) {
-            Write-Host "  Removed: $INSTALL_DIR" -ForegroundColor Green
-            return $true
-        }
-        Write-Host "  Failed to remove" -ForegroundColor Red
-        return $false
-    } catch {
-        Write-Host "  Failed to remove: $_" -ForegroundColor Red
-        return $false
+    Write-Host "  Killing capslang process..." -ForegroundColor Yellow
+    Get-Process -Name "capslang" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 1000
+
+    for ($i = 0; $i -lt 5; $i++) {
+        try {
+            Remove-Item $INSTALL_DIR -Recurse -Force -ErrorAction Stop
+            if (-not (Test-Path $INSTALL_DIR)) {
+                Write-Host "  Removed: $INSTALL_DIR" -ForegroundColor Green
+                return $true
+            }
+        } catch {}
+        Start-Sleep -Milliseconds 500
     }
+
+    Write-Host "  Failed to remove (file might be in use)" -ForegroundColor Red
+    Write-Host "  Try restarting and running uninstall again" -ForegroundColor Yellow
+    return $false
 }
 
 function Uninstall-CapsLang {
