@@ -13,9 +13,11 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = "capslang",
-        .root_source_file = .{ .cwd_relative = "capslang.zig" },
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .root_source_file = b.path("capslang.zig"),
+        }),
     });
 
     exe.subsystem = .Windows;
