@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
@@ -23,7 +23,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: zig-out/bin/capslang.exe
+          files: zig-out/bin/capslang-windows-x86_64.zip
           draft: false
           prerelease: false
         env:
