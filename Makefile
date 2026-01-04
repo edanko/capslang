@@ -21,6 +21,7 @@ build:
 # Build release version
 build-release:
 	zig build -Doptimize=ReleaseSmall
+	cd zig-out/bin && zip -q capslang-windows-x86_64.zip capslang.exe
 
 # Clean build artifacts
 clean:
